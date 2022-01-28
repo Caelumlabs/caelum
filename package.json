@@ -2,7 +2,7 @@
   "name": "caelum",
   "version": "3.0.0",
   "description": "Caelum SSI CLI",
-  "private": true,
+  "private": false,
   "types": "build/types/types.d.ts",
   "bin": {
     "caelum": "bin/caelum"
