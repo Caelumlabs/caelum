@@ -4,7 +4,7 @@ import { Caelum } from '../lib/caelum'
 
 module.exports = {
   run: async (toolbox: GluegunToolbox) => {
-    toolbox.print.info('Hello, setup!')
+    toolbox.print.info('Setup your caelum account')
     const askPassword = {
       type: 'password',
       name: 'password',
@@ -17,10 +17,10 @@ module.exports = {
     }
     const url = {
       type: 'text',
-      name: 'url',
+      name: 'providerUrl',
       message: 'RPC URL to connect to mumbai',
     }
-    const { password, password2 } = await toolbox.prompt.ask([
+    const { password, password2, providerUrl } = await toolbox.prompt.ask([
       askPassword,
       repeatPassword,
       url,
@@ -28,11 +28,19 @@ module.exports = {
     if (password !== password2) {
       toolbox.print.error('Password does not match')
     } else {
+      // Save config.
       const sep = toolbox.filesystem.separator
       const home = `${toolbox.filesystem.homedir()}${sep}.caelum${sep}`
+      const config = { providerUrl }
+      toolbox.filesystem.write(`${home}config.json`, config)
+
+      // Save wallets : EVM and Zenroom
       const wallets = await Caelum.newWallet(password)
       toolbox.filesystem.write(`${home}wallet.json`, wallets.evmWallet)
       toolbox.filesystem.write(`${home}zenroom.json`, wallets.zenWallet)
+      toolbox.print.success('\nSetup complete')
+      toolbox.print.info(`Your addres is: ${wallets.wallet.address}`)
+      toolbox.print.info(`Proceed to add funds to your wallet before registering (caelum register)\n`)
     }
   },
 }

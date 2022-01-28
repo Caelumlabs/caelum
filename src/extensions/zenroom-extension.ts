@@ -1,25 +1,29 @@
 import { GluegunToolbox } from 'gluegun'
-import { zencode_exec } from 'zenroom'
+import { Caelum } from '../lib/caelum'
 
-// add your CLI-specific functionality here, which will then be accessible
-// to your commands
 module.exports = (toolbox: GluegunToolbox) => {
-  toolbox.zenroom = {
-    newWallet: () => {
-      return new Promise((resolve) => {
-        const zencodeRandom = `
-Scenario 'ecdh': Create the keypair
-Given that I am known as 'Alice'
-When I create the keypair
-Then print my data`
+  toolbox.config = {
+    loadConfig: () => {
+      return new Promise(async (resolve) => {
+        const askPassword = {
+          type: 'password',
+          name: 'password',
+          message: 'Enter Password',
+        }
+        const { password } = await toolbox.prompt.ask([ askPassword ])
 
-        zencode_exec(zencodeRandom)
-          .then((result) => {
-            resolve(result.result)
-          })
-          .catch((error) => {
-            throw new Error(error)
-          })
+        const sep = toolbox.filesystem.separator
+        const home = `${toolbox.filesystem.homedir()}${sep}.caelum${sep}`
+        let config = toolbox.filesystem.read(`${home}config.json`) || false
+        if (config) {
+          config = JSON.parse(config)
+        }
+        let wallet = toolbox.filesystem.read(`${home}wallet.json`) || false
+        if (wallet) {
+            wallet = JSON.parse(wallet)
+          wallet = await Caelum.connect(config.providerUrl, wallet, password)
+        }
+        resolve({ config, wallet, password })
       })
     },
   }

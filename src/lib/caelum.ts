@@ -2,21 +2,25 @@ import { ethers } from 'ethers'
 import { zencode_exec } from 'zenroom'
 
 interface Wallets {
+  wallet: any
   evmWallet: any
   zenWallet: any
 }
 
-class Caelum {
-  url: string
+// const registryAddress = '';
 
-  constructor(url: string, password: string) {
-    this.url = url
+class Caelum {
+  static connect = async (providerUrl: string, encWallet: string, password: string) => {
+    /*
+    const wallet = ethers.Wallet.fromEncryptedJson(encWallet , password)
+    const provider = new ethers.providers.JsonRpcProvider(providerUrl)
+    return wallet.connect(provider)*/
   }
 
   static newWallet = async (password: string): Promise<Wallets> => {
-    let evmWallet, zenWallet
+    let wallet, evmWallet, zenWallet
     return new Promise((resolve) => {
-      const wallet = ethers.Wallet.createRandom()
+      wallet = ethers.Wallet.createRandom()
       wallet
         .encrypt(password)
         .then((encWallet) => {
@@ -31,6 +35,7 @@ Then print my data`
         .then((result) => {
           zenWallet = result.result
           resolve({
+            wallet: wallet,
             evmWallet: evmWallet,
             zenWallet: zenWallet,
           })
@@ -38,6 +43,12 @@ Then print my data`
         .catch((error) => {
           throw new Error(error)
         })
+    })
+  }
+
+  static mintNft = async (url: string): Promise<boolean> => {
+    return new Promise((resolve) => {
+      resolve(true);
     })
   }
 }
