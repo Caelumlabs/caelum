@@ -2,7 +2,7 @@ import { ethers, Wallet } from 'ethers'
 import { zencode_exec } from 'zenroom'
 import * as RegistryContract from '../contracts/CaelumRegistry.json'
 
-const REG_ADDRESS = '0x39d9c88eB8e0d221303Ac1c84a255a974EeD3BB0'
+const REG_ADDRESS = '0xb36c3D7e6Ac13fa263215C2EBdd60DEbB54AC338'
 
 interface Wallets {
   wallet: any
@@ -49,7 +49,7 @@ class Caelum {
           evmWallet = encWallet
           const zencodeRandom = `
 Scenario 'ecdh': Create the keypair
-Given that I am known as 'Alice'
+Given that I am known as 'CaelumOrg'
 When I create the keypair
 Then print my data`
           return zencode_exec(zencodeRandom)
@@ -68,16 +68,16 @@ Then print my data`
     })
   }
 
-  static mintNft = async (wallet: Wallet): Promise<number> => {
+  static mintNft = async (wallet: Wallet, publicKey: string): Promise<number> => {
     return new Promise(async (resolve) => {
       const nft = new ethers.Contract(REG_ADDRESS, RegistryContract.abi, wallet)
-      const tx = await nft.mint()
+      // const options = { gasPrice: 1000000000, gasLimit: 85000 }
+      const tx = await nft.mint(publicKey )
       const receipt = await tx.wait()
       const args = receipt.events?.filter((x) => {
         return x.event === 'Transfer'
       })
       const tokenId = parseInt(args[0].args['tokenId'])
-      console.log('TokenID', tokenId)
       resolve(tokenId)
     })
   }

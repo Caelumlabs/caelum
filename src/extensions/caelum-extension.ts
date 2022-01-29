@@ -31,7 +31,7 @@ module.exports = (toolbox: GluegunToolbox) => {
       config.tokenId = tokenId
       toolbox.filesystem.write(home, config)
     },
-    loadConfig: (): Promise<{ wallet: Wallet; tokenId: number }> => {
+    loadConfig: (): Promise<{ wallet: Wallet; signer:any, tokenId: number }> => {
       return new Promise(async (resolve) => {
         const home = getHome(toolbox)
         const strConfig = toolbox.filesystem.read(`${home}config.json`)
@@ -61,7 +61,13 @@ module.exports = (toolbox: GluegunToolbox) => {
           toolbox.print.error('Invalid password')
           process.exit(1)
         }
-        resolve({ wallet, tokenId: config.tokenId })
+        const zenWallet = toolbox.filesystem.read(`${home}zenroom.json`)
+        if (!zenWallet) {
+          toolbox.print.error('No Zenroom wallet found. Run caelum setup')
+          process.exit(1)
+        }
+        const signer = JSON.parse(zenWallet)
+        resolve({ wallet, signer, tokenId: config.tokenId })
       })
     },
   }

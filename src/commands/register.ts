@@ -5,7 +5,7 @@ import { Caelum } from '../lib/caelum'
 module.exports = {
   run: async (toolbox: GluegunToolbox) => {
     toolbox.print.info('Register your caelum account in the Blockchain')
-    const { wallet, tokenId } = await toolbox.config.loadConfig()
+    const { wallet, signer, tokenId } = await toolbox.config.loadConfig()
     const balance = await Caelum.getBalance(wallet)
     if (balance < 0.1) {
       toolbox.print.error(
@@ -14,7 +14,7 @@ module.exports = {
     } else if (tokenId !== 0) {
       toolbox.print.error(`DID NFT already minted : ${tokenId}`)
     } else {
-      const tokenId = await Caelum.mintNft(wallet)
+      const tokenId = await Caelum.mintNft(wallet, signer['CaelumOrg'].keypair.public_key)
       toolbox.config.updateConfig(tokenId)
     }
   },
