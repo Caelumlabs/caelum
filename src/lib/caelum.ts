@@ -2,7 +2,7 @@ import { ethers, Wallet } from 'ethers'
 import { zencode_exec } from 'zenroom'
 import * as RegistryContract from '../contracts/CaelumRegistry.json'
 
-const REG_ADDRESS = '0x373518609f733EAb7Ae30d98aC589E9900112efF'
+const REG_ADDRESS = '0x39d9c88eB8e0d221303Ac1c84a255a974EeD3BB0'
 
 interface Wallets {
   wallet: any
@@ -73,11 +73,11 @@ Then print my data`
       const nft = new ethers.Contract(REG_ADDRESS, RegistryContract.abi, wallet)
       const tx = await nft.mint()
       const receipt = await tx.wait()
-      console.log(receipt)
       const args = receipt.events?.filter((x) => {
         return x.event === 'Transfer'
       })
-      const tokenId = parseInt(args[0].args['result'][0])
+      const tokenId = parseInt(args[0].args['tokenId'])
+      console.log('TokenID', tokenId)
       resolve(tokenId)
     })
   }
