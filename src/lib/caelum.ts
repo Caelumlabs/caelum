@@ -71,8 +71,7 @@ Then print my data`
   static mintNft = async (wallet: Wallet, publicKey: string): Promise<number> => {
     return new Promise(async (resolve) => {
       const nft = new ethers.Contract(REG_ADDRESS, RegistryContract.abi, wallet)
-      // const options = { gasPrice: 1000000000, gasLimit: 85000 }
-      const tx = await nft.mint(publicKey )
+      const tx = await nft.mint(publicKey)
       const receipt = await tx.wait()
       const args = receipt.events?.filter((x) => {
         return x.event === 'Transfer'

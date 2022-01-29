@@ -31,8 +31,9 @@ module.exports = (toolbox: GluegunToolbox) => {
       config.tokenId = tokenId
       toolbox.filesystem.write(home, config)
     },
-    loadConfig: (): Promise<{ wallet: Wallet; signer:any, tokenId: number }> => {
+    loadConfig: (check: boolean = false): Promise<{ wallet: Wallet; signer:any, tokenId: number, balance: number }> => {
       return new Promise(async (resolve) => {
+        // Load configuration
         const home = getHome(toolbox)
         const strConfig = toolbox.filesystem.read(`${home}config.json`)
         if (!strConfig) {
@@ -40,6 +41,8 @@ module.exports = (toolbox: GluegunToolbox) => {
           process.exit(1)
         }
         const config: Config = JSON.parse(strConfig)
+        const tokenId: number = config.tokenId
+
         //Ask password.
         const askPassword = {
           type: 'password',
@@ -47,6 +50,8 @@ module.exports = (toolbox: GluegunToolbox) => {
           message: 'Enter Password',
         }
         const { password } = await toolbox.prompt.ask([askPassword])
+
+        // Load ETH wallet.
         const strWallet = toolbox.filesystem.read(`${home}wallet.json`)
         if (!strWallet) {
           toolbox.print.error('No wallet found. Run caelum setup')
@@ -57,17 +62,27 @@ module.exports = (toolbox: GluegunToolbox) => {
           strWallet,
           password
         )
+        const balance = await Caelum.getBalance(wallet)
         if (wallet === null) {
           toolbox.print.error('Invalid password')
           process.exit(1)
         }
+
+        // Load Zenroom Wallet.
         const zenWallet = toolbox.filesystem.read(`${home}zenroom.json`)
         if (!zenWallet) {
           toolbox.print.error('No Zenroom wallet found. Run caelum setup')
           process.exit(1)
         }
         const signer = JSON.parse(zenWallet)
-        resolve({ wallet, signer, tokenId: config.tokenId })
+
+        // Checking.
+        if (check && balance < 0.1) {
+          toolbox.print.error(
+            `Balance of the address ${wallet.address} is below 0.1`
+          )
+        }
+        resolve({ wallet, signer, tokenId, balance })
       })
     },
   }
