@@ -80,6 +80,36 @@ Then print my data`
       resolve(tokenId)
     })
   }
+
+  static signCredential(wallet: Wallet, signer: any, credential: any): Promise<any> {
+    return new Promise(async (resolve, reject) => {
+      const zenSigner = signer
+      zenSigner['CaelumOrg'].PublicKeyUrl = 'http://test.com'
+      const keys = JSON.stringify(zenSigner);
+      const data = `{"vc": ${JSON.stringify(credential)}}`;
+      const zencode = `
+        Rule check version 1.0.0
+        Scenario 'w3c' : sign
+        Scenario 'ecdh' : keypair
+        Given that I am 'CaelumOrg'
+        Given I have my 'keypair'
+        Given I have a 'verifiable credential' named 'vc'
+        Given I have a 'string' named 'PublicKeyUrl' inside 'CaelumOrg'
+        When I sign the verifiable credential named 'vc'
+        When I set the verification method in 'vc' to 'PublicKeyUrl'
+        Then print 'vc' as 'string'`;
+        console.log(zencode, zenSigner, credential, data, keys)
+      zencode_exec(zencode, { data, keys })
+        .then((result) => {
+          console.log('Worked')
+          console.log(result)
+          resolve(result);
+        })
+        .catch(() => {
+          reject();
+        });
+    })
+  }
 }
 
 export { Caelum }
