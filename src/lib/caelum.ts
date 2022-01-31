@@ -2,12 +2,23 @@ import { ethers, Wallet } from 'ethers'
 import { zencode_exec } from 'zenroom'
 import * as RegistryContract from '../contracts/CaelumRegistry.json'
 
-const REG_ADDRESS = '0xb36c3D7e6Ac13fa263215C2EBdd60DEbB54AC338'
-
 interface Wallets {
   wallet: any
   evmWallet: any
   zenWallet: any
+}
+
+interface Metadata {
+  name: string
+  level: number
+  publicKey: string
+}
+
+interface ResultVerification {
+  signature: boolean
+  level: number
+  validFrom: number
+  validTo: number
 }
 
 // const registryAddress = '';
@@ -68,9 +79,9 @@ Then print my data`
     })
   }
 
-  static mintNft = async (wallet: Wallet, publicKey: string): Promise<number> => {
+  static mintNft = async (wallet: Wallet, registry: string, publicKey: string): Promise<number> => {
     return new Promise(async (resolve) => {
-      const nft = new ethers.Contract(REG_ADDRESS, RegistryContract.abi, wallet)
+      const nft = new ethers.Contract(registry, RegistryContract.abi, wallet)
       const tx = await nft.mint(publicKey)
       const receipt = await tx.wait()
       const args = receipt.events?.filter((x) => {
@@ -81,8 +92,9 @@ Then print my data`
     })
   }
 
-  static signCredential(wallet: Wallet, signer: any, credential: any): Promise<any> {
+  static signCertificate(wallet: Wallet, signer: any, registry: string, tokenId: number, credential: any): Promise<any> {
     return new Promise(async (resolve, reject) => {
+      let certificate
       const zenSigner = signer
       zenSigner['CaelumOrg'].PublicKeyUrl = 'http://test.com'
       const keys = JSON.stringify(zenSigner);
@@ -98,16 +110,68 @@ Then print my data`
         When I sign the verifiable credential named 'vc'
         When I set the verification method in 'vc' to 'PublicKeyUrl'
         Then print 'vc' as 'string'`;
-        console.log(zencode, zenSigner, credential, data, keys)
+        // console.log(zencode, zenSigner, credential, data, keys)
       zencode_exec(zencode, { data, keys })
+        .then(async (result) => {
+          const nft = new ethers.Contract(registry, RegistryContract.abi, wallet)
+          certificate = JSON.parse(result.result)
+          certificate.hash = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(certificate.vc.proof.jws))
+          const tx = await nft.addCertificate(tokenId, certificate.hash);
+          return tx.wait()
+        })
         .then((result) => {
-          console.log('Worked')
-          console.log(result)
-          resolve(result);
+          // TODO: check Blockchain errors
+          resolve(certificate);
         })
         .catch(() => {
           reject();
         });
+    })
+  }
+
+  static verifyCertificate(wallet: Wallet, registry: string, certificate: any) {
+    return new Promise(async (resolve, reject) => {
+      const nft = new ethers.Contract(registry, RegistryContract.abi, wallet)
+      try {
+        const issuerParts = certificate.issuer.split(':')
+        const tokenId = issuerParts[3]
+        const hash = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(certificate.proof.jws))
+        const dates: any = await nft.verifyCertificate(tokenId, hash)
+        let json: any = await nft.tokenURI(tokenId)
+        json = json.split(',')
+        json = Buffer.from(json[1], 'base64').toString('ascii')
+        const metadata: Metadata = JSON.parse(json)
+        const keys = `{"Issuer": {"public_key": "${metadata.publicKey}"}}`
+        const data = `{"vc": ${JSON.stringify(certificate)}}`;
+        const zencode = `
+          Rule check version 1.0.0
+          Scenario 'w3c' : sign
+          Scenario 'ecdh' : keypair
+          Given I have a 'public key' from 'Issuer'
+          Given I have a 'verifiable credential' named 'vc'
+          When I verify the verifiable credential named 'vc'
+          Then print 'vc' as 'string'
+          Then print the string 'OK'`
+        // console.log(zencode, zenSigner, credential, data, keys)
+        zencode_exec(zencode, { data, keys })
+          .then(async (_result: any) => {
+            const result = JSON.parse(_result.result)
+            const res: ResultVerification = {
+              signature: (result.output[0] === 'OK'),
+              level: metadata.level,
+              validFrom: parseInt(dates.validFrom),
+              validTo: parseInt(dates.validTo),
+            }
+            resolve(res)
+          })
+      } catch (_e) {
+        resolve({
+          signature: false,
+          level: 0,
+          validFrom: 0,
+          validTo: 0,
+        })
+      }
     })
   }
 }

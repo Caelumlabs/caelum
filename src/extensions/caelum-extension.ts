@@ -4,6 +4,7 @@ import { Wallet } from 'ethers'
 
 interface Config {
   providerUrl: string
+  registry: string
   tokenId: number
 }
 
@@ -15,10 +16,10 @@ function getHome(toolbox): string {
 
 module.exports = (toolbox: GluegunToolbox) => {
   toolbox.config = {
-    saveConfig: async (providerUrl: string, wallets: any) => {
+    saveConfig: async (providerUrl: string, registry: string, wallets: any) => {
       const home = getHome(toolbox)
       // Save config.
-      const config = { providerUrl, tokenId: 0 }
+      const config = { providerUrl, registry, tokenId: 0 }
       toolbox.filesystem.write(`${home}config.json`, config)
       // Save wallets : EVM and Zenroom
       toolbox.filesystem.write(`${home}wallet.json`, wallets.evmWallet)
@@ -31,7 +32,7 @@ module.exports = (toolbox: GluegunToolbox) => {
       config.tokenId = tokenId
       toolbox.filesystem.write(home, config)
     },
-    loadConfig: (check: boolean = false): Promise<{ wallet: Wallet; signer:any, tokenId: number, balance: number }> => {
+    loadConfig: (check: boolean = false): Promise<{ wallet: Wallet; signer:any; registry: string; tokenId: number; balance: number; }> => {
       return new Promise(async (resolve) => {
         // Load configuration
         const home = getHome(toolbox)
@@ -42,6 +43,7 @@ module.exports = (toolbox: GluegunToolbox) => {
         }
         const config: Config = JSON.parse(strConfig)
         const tokenId: number = config.tokenId
+        const registry: string = config.registry
 
         //Ask password.
         const askPassword = {
@@ -82,8 +84,13 @@ module.exports = (toolbox: GluegunToolbox) => {
             `Balance of the address ${wallet.address} is below 0.1`
           )
         }
-        resolve({ wallet, signer, tokenId, balance })
+        resolve({ wallet, signer, registry, tokenId, balance })
       })
+    },
+    saveCertificate: async (certificate: any) => {
+      const home = getHome(toolbox)
+      // Save config.
+      toolbox.filesystem.write(`${home}certificates/signed/${certificate.hash}.json`, certificate.vc)
     },
   }
 }

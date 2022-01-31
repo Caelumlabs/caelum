@@ -20,17 +20,23 @@ module.exports = {
       name: 'providerUrl',
       message: 'RPC URL to connect to mumbai',
     }
-    const { password, password2, providerUrl } = await toolbox.prompt.ask([
+    const askRegistry = {
+      type: 'text',
+      name: 'registry',
+      message: 'Registry contract address',
+    }
+    const { password, password2, providerUrl, registry } = await toolbox.prompt.ask([
       askPassword,
       repeatPassword,
       askUrl,
+      askRegistry,
     ])
     if (password !== password2) {
       toolbox.print.error('Password does not match')
     } else {
       // Save wallets : EVM and Zenroom
       const wallets = await Caelum.newWallet(password)
-      await toolbox.config.saveConfig(providerUrl, wallets)
+      await toolbox.config.saveConfig(providerUrl, registry, wallets)
       toolbox.print.success('\nSetup complete')
       toolbox.print.info(`Your addres is: ${wallets.wallet.address}`)
       toolbox.print.info(
