@@ -1,6 +1,6 @@
 {
   "name": "caelum",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Caelum SSI CLI",
   "private": false,
   "types": "build/types/types.d.ts",
